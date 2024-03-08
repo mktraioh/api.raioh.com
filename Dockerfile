@@ -16,6 +16,9 @@ RUN apt update \
 RUN apt-get update && apt-get install -y composer
 
 
+RUN apt-get install -y zlib1g-dev \
+    && docker-php-ext-install zip
+
 COPY . /var/www/html
 
 WORKDIR /var/www/html
