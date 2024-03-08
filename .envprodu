@@ -1,0 +1,6 @@
+DB_CONNECTION=mysql
+DB_HOST="localhost"
+DB_PORT=3306
+DB_DATABASE="apiraioh_db"
+DB_USERNAME="apiraioh_root"
+DB_PASSWORD="Admlock24#"
