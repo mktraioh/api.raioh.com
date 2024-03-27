@@ -54,14 +54,18 @@ class MercadoPagoService extends BaseService
             data_get($data, 'parcel_id') ? "parcel_id=$order->id" : "order_id=$order->id"
         );
 
-        $token = data_get($payload, 'token', 'TEST-3509120936069434-021902-a710b8621f550cdc13c90f5829d9005f-195389163');
+        $formated_price = number_format(($totalPrice / $order->rate) / 100, 2, '.', '');
+        
+        // echo json_encode($formated_price); die();
+
+        $token = data_get($payload, 'token', 'APP_USR-1423523957146638-031916-ebbf30d1fb0f0e88831ad1a40dddcfaf-106239516');
 
         SDK::setAccessToken($token);
 
 		$sandbox = (bool)data_get($payload, 'sandbox', true);
 
         $config = new Config();
-        $config->set('sandbox', $sandbox);
+        $config->set('sandbox', false);
         $config->set('access_token', $token);
 
         $trxRef = Str::uuid();
@@ -70,7 +74,7 @@ class MercadoPagoService extends BaseService
         $item->id           = $trxRef;
         $item->title        = $order->id;
         $item->quantity     = $order->order_details_sum_quantity ?? 1;
-        $item->unit_price   = $order->order_details_sum_total_price ?? 1;
+        $item->unit_price   = $formated_price;
 
         $preference             = new Preference;
         $preference->items      = [$item];
@@ -84,7 +88,10 @@ class MercadoPagoService extends BaseService
 
         $preference->save();
 
-        $payment_link = $sandbox ? $preference->sandbox_init_point : $preference->init_point;
+        //$payment_link = $sandbox ? $preference->sandbox_init_point : $preference->init_point;
+        
+        
+        $payment_link = $preference->init_point;
 
         if (!$payment_link) {
             throw new Exception('ERROR IN MERCADO PAGO');
@@ -98,7 +105,7 @@ class MercadoPagoService extends BaseService
             'id'    => $preference->id,
             'data'  => [
                 'url'   => $payment_link,
-                'price' => $totalPrice,
+                'price' => $formated_price,
             ]
         ]);
     }
