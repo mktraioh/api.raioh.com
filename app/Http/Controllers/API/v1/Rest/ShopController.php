@@ -264,6 +264,29 @@ class ShopController extends RestBaseController
         );
     }
 
+        /**
+         * Search shop Model from database via slug.
+         *
+         * @param string $slug
+         * @param FilterParamsRequest $request
+         * @return JsonResponse
+         */
+        public function productsSlug(string $slug, FilterParamsRequest $request): JsonResponse
+        {
+            $shop = Shop::where('slug', $slug)->first();
+
+            if (empty($shop)) {
+                return $this->onErrorResponse([
+                    'code'    => ResponseError::ERROR_404,
+                    'message' => __('errors.' . ResponseError::ERROR_404, locale: $this->language)
+                ]);
+            }
+
+            return $this->successResponse(__('errors.' . ResponseError::SUCCESS, locale: $this->language),
+                $this->shopRepository->products($request->merge(['shop_id' => $shop->id])->all())
+            );
+        }
+
 	/**
 	 * Search shop Model from database via IDs.
 	 *
@@ -274,6 +297,30 @@ class ShopController extends RestBaseController
     public function categories(int $id, FilterParamsRequest $request): JsonResponse|AnonymousResourceCollection
     {
         $shop = Shop::find($id);
+
+        if (empty($shop)) {
+            return $this->onErrorResponse([
+                'code'    => ResponseError::ERROR_404,
+                'message' => __('errors.' . ResponseError::ERROR_404, locale: $this->language)
+            ]);
+        }
+
+        $categories = $this->shopRepository->categories($request->merge(['shop_id' => $shop->id])->all());
+
+        return CategoryResource::collection($categories);
+    }
+
+
+    /**
+     * Search shop Model from database via slug.
+     *
+     * @param string $slug
+     * @param FilterParamsRequest $request
+     * @return JsonResponse|AnonymousResourceCollection
+     */
+    public function categoriesSlug(string $slug, FilterParamsRequest $request): JsonResponse|AnonymousResourceCollection
+    {
+        $shop = Shop::where('slug', $slug)->first();
 
         if (empty($shop)) {
             return $this->onErrorResponse([
@@ -380,6 +427,31 @@ class ShopController extends RestBaseController
         return ShopGalleryResource::make($shopGallery);
     }
 
+
+    /**
+     * @param string $slug
+     * @return ShopGalleryResource|JsonResponse
+     */
+    public function galleriesSlug(string $slug): ShopGalleryResource|JsonResponse
+    {
+        /** @var ShopGallery|null $shopGallery */
+        $shopGallery = ShopGallery::with(['galleries'])
+            ->whereHas('shop', function ($query) use ($slug) {
+                $query->where('slug', $slug);
+            })
+            ->where('active', 1)
+            ->first();
+
+        if (empty($shopGallery) || !$shopGallery->active) {
+            return $this->onErrorResponse([
+                'code'    => ResponseError::ERROR_404,
+                'message' => __('errors.' . ResponseError::ERROR_404, locale: $this->language)
+            ]);
+        }
+
+        return ShopGalleryResource::make($shopGallery);
+    }
+
     /**
      * @param int $id
      * @param FilterParamsRequest $request
@@ -411,6 +483,47 @@ class ShopController extends RestBaseController
 
         return ReviewResource::collection($result);
     }
+
+    /**
+     * @param string $slug
+     * @param FilterParamsRequest $request
+     * @return AnonymousResourceCollection
+     */
+    public function reviewsSlug(string $slug, FilterParamsRequest $request): AnonymousResourceCollection
+    {
+        $shop = Shop::where('slug', $slug)->first();
+
+        if (empty($shop)) {
+            // Se a loja não for encontrada, você pode lidar com isso de acordo com a sua lógica, por exemplo, retornar um erro 404.
+            // Aqui está um exemplo básico:
+            abort(404, 'Shop not found');
+        }
+
+        $filter = $request->merge([
+            'type'      => 'order',
+            'assign'    => 'shop',
+            'assign_id' => $shop->id, // Aqui usamos $shop->id ao invés do $id fornecido pela rota.
+        ])->all();
+
+        $result = (new ReviewRepository)->paginate($filter, [
+            'user' => fn($q) => $q
+                ->select([
+                    'id',
+                    'uuid',
+                    'firstname',
+                    'lastname',
+                    'password',
+                    'img',
+                    'active',
+                ])
+                ->withAvg('reviews', 'rating')
+                ->withCount('reviews'),
+            'reviewable:id,address',
+        ]);
+
+        return ReviewResource::collection($result);
+    }
+
 
     /**
      * Add Review to Order.
