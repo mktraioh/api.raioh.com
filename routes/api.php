@@ -17,33 +17,6 @@ use Illuminate\Support\Facades\Route;
 | is assigned the "api" middleware group. Enjoy building your API!
 |
 */
-
-Route::get('/test', function() {
-    return "test";
-});
-
-Route::middleware('auth:sanctum')->get('/testandouser', function (Request $request) {
-    return $request->user();
-});
-
-Route::post('/login', function (Request $request) {
-    // Simulando um usuário fake
-    $credentials = [
-        'email' => 'manager@githubit.com',
-        'password' => 'manager',
-    ];
-
-    // Verifica as credenciais e faz login
-    if (Auth::attempt($credentials)) {
-        // Se o login for bem-sucedido, retorna o token de autenticação
-        return response()->json(['token' => auth()->user()->createToken('Token de Acesso')->plainTextToken]);
-    } else {
-        // Se as credenciais estiverem incorretas, retorna uma resposta de erro
-        return response()->json(['error' => 'Credenciais inválidas'], 401);
-    }
-})->name('login');
-
-
 Route::group(['prefix' => 'v1', 'middleware' => ['block.ip']], function () {
     // Methods without AuthCheck
     Route::post('/auth/register',                       [RegisterController::class, 'register'])
@@ -184,6 +157,18 @@ Route::group(['prefix' => 'v1', 'middleware' => ['block.ip']], function () {
 
         Route::get('shops/{id}/reviews',            [Rest\ShopController::class, 'reviews'])
             ->where('id', '[0-9]+');
+
+        Route::get('shops/slug/{slug}/categories', [Rest\ShopController::class, 'categoriesSlug'])
+            ->where('slug', '[a-z0-9-]+');
+        
+        Route::get('shops/slug/{slug}/products', [Rest\ShopController::class, 'productsSlug'])
+            ->where('slug', '[a-z0-9-]+');
+        
+        Route::get('shops/slug/{slug}/galleries', [Rest\ShopController::class, 'galleriesSlug'])
+            ->where('slug', '[a-z0-9-]+');
+        
+        Route::get('shops/slug/{slug}/reviews', [Rest\ShopController::class, 'reviewsSlug'])
+            ->where('slug', '[a-z0-9-]+');
 
         Route::post('shops/review/{id}',            [Rest\ShopController::class, 'addReviews']);
 
