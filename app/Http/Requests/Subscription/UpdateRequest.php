@@ -22,6 +22,7 @@ class UpdateRequest extends BaseRequest
            'title'          => 'required|string',
            'product_limit'  => 'required|integer|min:1',
            'order_limit'    => 'required|integer|min:1',
+           'commission'     => 'integer',
         ];
     }
 }
